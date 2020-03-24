@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 # coding=utf-8
-from flask import Flask
-from flask import request
-from flask import make_response
-from flask import jsonify
+from flask import Flask, request, make_response, jsonify
 from uuid import uuid4
 
 try:
@@ -29,47 +26,18 @@ app = Flask(__name__)
 
 base_path = ''
 
-@app.route('/', methods=['GET', 'POST'])
-def home():
-    resp = make_response('<h1>Home<h1>', 200)
-    return resp
-
-@app.route('/signin', methods=['GET'])
-def signin_form():
-    global base_path
-    html = '''<form action="{}/signin" method="post">
-         <p><input name="username"></p>
-         <p><input name="password" type="password"></p>
-         <p><button type="submit">Sign In</button></p>
-         </form>'''.format(base_path)
-
-    resp = make_response(html, 200)
-    return resp
-
-@app.route('/signin', methods=['POST'])
-def signin():
-    if request.form['username']=='admin' and request.form['password']=='password':
-        html = '<h3>Hello, admin!</h3>'
-    else:
-        html = '<h3>Bad username or password.</h3>'
-    resp = make_response(html, 200)
-    return resp
 
 @app.route('/mine', methods=['GET'])
 def mine():
-    # We run the proof of work algorithm to get the next proof...
     last_block = blockchain.last_block
     proof = blockchain.proof_of_work(last_block)
 
-    # We must receive a reward for finding the proof.
-    # The sender is "0" to signify that this node has mined a new coin.
     blockchain.new_transaction(
         sender="0",
         recipient=node_identifier,
         amount=1,
     )
 
-    # Forge the new Block by adding it to the chain
     previous_hash = blockchain.hash(last_block)
     block = blockchain.new_block(proof, previous_hash)
 
@@ -86,13 +54,11 @@ def mine():
 def new_transaction():
     values = request.get_json()
 
-    # Check that the required fields are in the POST'ed data
     required = ['sender', 'recipient', 'amount']
     if not all(k in values for k in required):
         response = {'error': 'Missing values'}
         return make_response(jsonify(response), STATUS_400)
 
-    # Create a new Transaction
     index = blockchain.new_transaction(values['sender'], values['recipient'], values['amount'])
     
     response = {'message': f'Transaction will be added to Block {index}'}
